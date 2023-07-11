@@ -1,0 +1,90 @@
+---
+title: "Visualize gene expression"
+author: "Guillem Ylla"
+date: "2023-07-06"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+## Set parameters
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load data
+
+```{r}
+#load table of counts
+Table_of_counts<-read.csv("GSE99785_gene_Counts_table_anot_v3.csv",row.names=1)
+
+head(Table_of_counts)
+```
+## Normalize in TPMs
+
+Transcript per Million (TPM) normalization, normalized by gene length and library size. We will divide the counts of each gene, by the gene length, and then, by the total number of reads in the sample (i.e. library size).
+
+
+- Get gene lengths:
+
+```{r}
+# Load gene length table. It can be obtained from gff/gtf file. Here we have it prepared.
+gene_len<-read.csv("Bger_gene_legth.csv")
+```
+
+- Devide the counts by the gene length:
+
+```{r}
+RPK=(gene_counts_df/ (gene_counts_v2$annotation[,c("Length")]/1000))
+RPK[is.na(RPK)] <- 0
+RPK_sum=colSums(RPK)/1000000
+TPM=sweep(RPK, MARGIN=2, RPK_sum, "/", check.margin=TRUE)
+head(TPM)
+colSums(TPM)
+```
+
+
+
+## Reads per million
+
+
+- First, we calculate the library sizes.
+
+```{r}
+library_size<-colSums(Table_of_counts)
+library_size
+```
+- We divide the the cunts, by the library size. And multiple for 1 Million to get Reads Per Million (RPMs)
+
+```{r}
+# We apply the function (FUN), which is a division ("/"), to the table of counts row-wise (MARGIN=2), with values from library_size
+ToC_RPM<-sweep(Table_of_counts, MARGIN=2, library_size, FUN= "/", check.margin=TRUE)*1e6 
+  
+
+head(ToC_RPM)
+```
+
+- If we normalized well by RPM, all samples should be noramlized to 1M when we sum all counts.
+
+```{r}
+colSums(ToC_RPM)
+```
+
+
+
+## Get Gene of Interest
+
+```{r}
+ID_gene_of_interest<-"Bger_05466"
+
+GoI_RPM<-ToC_RPM[ rownames(ToC_RPM) == ID_gene_of_interest, ]
+
+GoI_RPM
+```
+
+## Barplot of the gene
+
+```{r}
+barplot(as.matrix(GoI_RPM), col="darkgrey")
+
+```
+
+

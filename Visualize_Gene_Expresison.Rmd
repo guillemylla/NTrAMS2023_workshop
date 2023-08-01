@@ -33,57 +33,40 @@ gene_len<-read.csv("Bger_gene_legth.csv")
 - Devide the counts by the gene length:
 
 ```{r}
-RPK=(gene_counts_df/ (gene_counts_v2$annotation[,c("Length")]/1000))
-RPK[is.na(RPK)] <- 0
+# Cet's make sure that the genes in the table of counts and in the gene length table are in same order
+identical(rownames(Table_of_counts), gene_len$GeneID)
+
+# Calculate reads per kilobase (dividing the counts by the length of the gene per kb)
+RPK=(Table_of_counts/ (gene_len$Length/1000))
+#RPK[is.na(RPK)] <- 0
+# Calculate library size (sum of RPK) and divide per 1M
 RPK_sum=colSums(RPK)/1000000
-TPM=sweep(RPK, MARGIN=2, RPK_sum, "/", check.margin=TRUE)
+# Get TPMs by dividing the RPK by the library size
+TPM=sweep(RPK, MARGIN=2, STATS=RPK_sum, FUN="/", check.margin=TRUE) # MARGIN=2 applies the FUNction (/) to each column of RPK using the STATS object
+# see first rows of the TPM table
 head(TPM)
+```
+
+
+```{r}
+# The sum of TPMs, by definition should be 1M in all samples
 colSums(TPM)
 ```
-
-
-
-## Reads per million
-
-
-- First, we calculate the library sizes.
-
-```{r}
-library_size<-colSums(Table_of_counts)
-library_size
-```
-- We divide the the cunts, by the library size. And multiple for 1 Million to get Reads Per Million (RPMs)
-
-```{r}
-# We apply the function (FUN), which is a division ("/"), to the table of counts row-wise (MARGIN=2), with values from library_size
-ToC_RPM<-sweep(Table_of_counts, MARGIN=2, library_size, FUN= "/", check.margin=TRUE)*1e6 
-  
-
-head(ToC_RPM)
-```
-
-- If we normalized well by RPM, all samples should be noramlized to 1M when we sum all counts.
-
-```{r}
-colSums(ToC_RPM)
-```
-
-
 
 ## Get Gene of Interest
 
 ```{r}
 ID_gene_of_interest<-"Bger_05466"
 
-GoI_RPM<-ToC_RPM[ rownames(ToC_RPM) == ID_gene_of_interest, ]
+GoI_TPM<-TPM[ rownames(TPM) == ID_gene_of_interest, ]
 
-GoI_RPM
+GoI_TPM
 ```
 
 ## Barplot of the gene
 
 ```{r}
-barplot(as.matrix(GoI_RPM), col="darkgrey")
+barplot(as.matrix(GoI_TPM), col="darkgrey")
 
 ```
 

@@ -1,49 +1,52 @@
 ---
 title: "Visualize gene expression"
 author: "Guillem Ylla"
-date: "2023-07-06"
+date: "2023-08-03"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-## Set parameters
-knitr::opts_chunk$set(echo = TRUE)
-```
+To run a single line where you have the cursor:
+
+- Ctrl/Command + Enter
+
+To run all current chunk:
+
+- Ctrl/Command + Shift + Enter 
 
 ## Load data
 
 ```{r}
-#load table of counts
-Table_of_counts<-read.csv("GSE99785_gene_Counts_table_anot_v3.csv",row.names=1)
-
+# Load table of counts
+Table_of_counts<-read.csv("data/GSE99785_gene_Counts_table_anot_v3.csv",row.names=1)
+# Visualize first rows
 head(Table_of_counts)
 ```
 ## Normalize in TPMs
 
-Transcript per Million (TPM) normalization, normalized by gene length and library size. We will divide the counts of each gene, by the gene length, and then, by the total number of reads in the sample (i.e. library size).
+Transcript per Million (TPM) normalization: normalizes the counts by gene length and library size. We will divide the counts of each gene, by the gene length, and then, by the library size.
 
 
 - Get gene lengths:
 
 ```{r}
 # Load gene length table. It can be obtained from gff/gtf file. Here we have it prepared.
-gene_len<-read.csv("Bger_gene_legth.csv")
+gene_len<-read.csv("data/Bger_gene_legth.csv")
 ```
 
 - Devide the counts by the gene length:
 
 ```{r}
-# Cet's make sure that the genes in the table of counts and in the gene length table are in same order
+# Let's make sure that the genes in the table of counts and in the gene length table are in same order
 identical(rownames(Table_of_counts), gene_len$GeneID)
 
-# Calculate reads per kilobase (dividing the counts by the length of the gene per kb)
+# Calculate reads per kb (dividing the counts by the length of the gene per kb)
 RPK=(Table_of_counts/ (gene_len$Length/1000))
 #RPK[is.na(RPK)] <- 0
 # Calculate library size (sum of RPK) and divide per 1M
 RPK_sum=colSums(RPK)/1000000
 # Get TPMs by dividing the RPK by the library size
 TPM=sweep(RPK, MARGIN=2, STATS=RPK_sum, FUN="/", check.margin=TRUE) # MARGIN=2 applies the FUNction (/) to each column of RPK using the STATS object
-# see first rows of the TPM table
+# Visualize first rows of the TPM table
 head(TPM)
 ```
 
@@ -53,7 +56,7 @@ head(TPM)
 colSums(TPM)
 ```
 
-## Get Gene of Interest
+## Select a gene of interest
 
 ```{r}
 ID_gene_of_interest<-"Bger_05466"
@@ -67,7 +70,35 @@ GoI_TPM
 
 ```{r}
 barplot(as.matrix(GoI_TPM), col="darkgrey")
-
 ```
+----
+
+## Extra plot: Make nicer plots
+
+With ggplot2 you can make much nicer plots!
+
+```{r message=FALSE, warning=FALSE}
+#install.packages(c("tidyr","ggplot2","dplyr","tidyr","tibble","stringr")) # Uncoment the line and run if you need to install the libraries
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(tibble)
+library(stringr)
+
+TPM_long<-TPM %>% 
+  rownames_to_column("GeneIDs") %>% 
+  pivot_longer(cols=colnames(TPM),names_to="Sample", values_to = "TPMs") %>%
+  separate(Sample, sep="_", into= c("Stage","Replicate"), remove = FALSE ) 
+
+TPM_long_GoI<-TPM_long %>%  
+                filter(GeneIDs==ID_gene_of_interest)
+  
+
+ggplot(TPM_long_GoI, aes(x=Stage, y=TPMs))+
+  geom_point(aes(color=Stage), size=4)+
+  ggtitle(paste("Expression of the gene - ",ID_gene_of_interest)) +
+  theme_light()
+```
+
 
 

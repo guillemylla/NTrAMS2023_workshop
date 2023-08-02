@@ -21,6 +21,14 @@ Table_of_counts<-read.csv("data/GSE99785_gene_Counts_table_anot_v3.csv",row.name
 # Visualize first rows
 head(Table_of_counts)
 ```
+
+Check the library sizes:
+ 
+```{r}
+colSums(Table_of_counts)
+```
+
+
 ## Normalize in TPMs
 
 Transcript per Million (TPM) normalization: normalizes the counts by gene length and library size. We will divide the counts of each gene, by the gene length, and then, by the library size.
@@ -33,7 +41,7 @@ Transcript per Million (TPM) normalization: normalizes the counts by gene length
 gene_len<-read.csv("data/Bger_gene_legth.csv")
 ```
 
-- Devide the counts by the gene length:
+- Divide the counts by the gene length:
 
 ```{r}
 # Let's make sure that the genes in the table of counts and in the gene length table are in same order
@@ -71,9 +79,12 @@ GoI_TPM
 ```{r}
 barplot(as.matrix(GoI_TPM), col="darkgrey")
 ```
+
 ----
 
-## Extra plot: Make nicer plots
+## Advanced exercises
+
+### Make nicer plots
 
 With ggplot2 you can make much nicer plots!
 
@@ -85,20 +96,36 @@ library(tidyr)
 library(tibble)
 library(stringr)
 
+# for ggplots we first need to transfrom the wide table into a long table
 TPM_long<-TPM %>% 
   rownames_to_column("GeneIDs") %>% 
   pivot_longer(cols=colnames(TPM),names_to="Sample", values_to = "TPMs") %>%
   separate(Sample, sep="_", into= c("Stage","Replicate"), remove = FALSE ) 
 
 TPM_long_GoI<-TPM_long %>%  
-                filter(GeneIDs==ID_gene_of_interest)
+                filter(GeneIDs=="Bger_05466")# select TPMs of the gene of interest
   
 
 ggplot(TPM_long_GoI, aes(x=Stage, y=TPMs))+
-  geom_point(aes(color=Stage), size=4)+
-  ggtitle(paste("Expression of the gene - ",ID_gene_of_interest)) +
-  theme_light()
+  geom_point(aes(color=Stage), size=4)+ # plot data in points and color by stage
+  ggtitle(paste("Expression of the gene - ",TPM_long_GoI$GeneIDs)) + # add title
+  theme_light() # use a pre-defined light theme
 ```
 
+### Plot multiple genes at ones
+
+```{r}
+
+
+TPM_long_multiple_genes<-TPM_long %>%  
+                filter(GeneIDs%in%c("Bger_05466","Bger_05260","Bger_03560","Bger_03657")) ## select multiple genes
+  
+
+ggplot(TPM_long_multiple_genes, aes(x=Stage, y=TPMs))+
+  geom_point(aes(color=Stage), size=4)+
+  facet_wrap(~GeneIDs, ncol = 2)+ # separate plots by GeneIDs in 2 columns
+  ggtitle("Expression of the selected genes") +
+  theme_light()
+```
 
 

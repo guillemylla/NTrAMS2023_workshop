@@ -8,4 +8,4 @@ Welcome to the Git repository for the [Non-Traditional Arthropod Model Systems: 
 
 
 - Slides available in [this link](https://docs.google.com/presentation/d/1SO4QHi12t_nAKcJBqDFvbBruyYlORtQ57h32Isd3E54/edit?usp=sharing).
-
+- Link to [Apollo server for the *Gryllus bimaculatus* genome](http://149.156.78.178:8800/) 
